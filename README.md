@@ -51,24 +51,25 @@ Este repositorio reúne el firmware de los nodos de monitoreo, el firmware del g
 ## Estructura del repositorio
 
 ```text
-Sistema-Monitoreo-Ambiental-Aulas
+sistema-monitoreo-ambiental-aulas/
 │
-├── Django/                 Plataforma web desarrollada con Django.
-├── Base_de_datos/          Base de datos y archivos relacionados con PostgreSQL.
-├── Diseño_Carcasa/         Diseño de la carcasa del prototipo.
-├── Firmware_Pruebas/       Firmware del gateway utilizado durante la etapa de pruebas.
-├── Manuales/               Manual de Usuario y Manual del Programador.
 ├── Nodos/
 │   ├── Aula_1/             Firmware del nodo de monitoreo instalado en el Aula 1.
 │   └── Aula_2/             Firmware del nodo de monitoreo instalado en el Aula 2.
-├── PCB/                    Diseño de la placa electrónica, serigrafía y archivos Gerber.
+├── Firmware_Pruebas/       Firmware del gateway utilizado únicamente durante la etapa de pruebas.
+├── PCB/
+│   ├── Diseño_PCB/         Diseño esquemático de la placa (imagen exportada de EasyEDA).
+│   ├── Archivo_Gerber/     Archivos Gerber para fabricación de la PCB.
+│   └── Serigrafía/         Serigrafía de identificación de componentes.
+├── Diseño_Carcasa/         Modelo 3D de la carcasa protectora del nodo.
+├── Django/                 Backend y dashboard web desarrollado con Django + PostgreSQL.
+├── Manuales/
+│   ├── Manual_Usuario/     Guía de uso del sistema para el usuario final.
+│   └── Manual_Programador/ Guía técnica de instalación, firmware y base de datos.
 │
 ├── README.md
-├── LICENSE
+├── LICENCIA
 └── .gitignore
-```
-
----
 
 ## Autor
 
