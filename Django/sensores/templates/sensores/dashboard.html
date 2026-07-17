@@ -1,0 +1,539 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="30">
+
+    <title>Dashboard Ambiental Smart Campus UNL</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            color: #222;
+        }
+
+        header {
+            background: #0b3d2e;
+            color: white;
+            padding: 20px 40px;
+        }
+
+        .header-flex {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            height: 80px;
+            max-width: 220px;
+            object-fit: contain;
+            background: white;
+            padding: 8px;
+            border-radius: 10px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            font-size: 14px;
+        }
+
+        .contenedor {
+            padding: 30px 40px;
+        }
+
+        .contenedor-blanco {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 3px 8px rgba(0,0,0,.08);
+            margin-bottom: 30px;
+        }
+
+        .tarjetas {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .tarjeta {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 3px 8px rgba(0,0,0,.08);
+            border-left: 8px solid #2e7d32;
+        }
+
+        .tarjeta h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .valor {
+            font-size: 30px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .estado {
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .ok {
+            border-left-color: #2e7d32;
+        }
+
+        .medio {
+            border-left-color: #f9a825;
+        }
+
+        .alto {
+            border-left-color: #c62828;
+        }
+
+        .graficas {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        .grafica-box {
+            height: 330px;
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 3px 8px rgba(0,0,0,.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        th {
+            background: #0b3d2e;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        td {
+            padding: 9px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        tr:hover {
+            background: #f1f1f1;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-ok {
+            background: #2e7d32;
+        }
+
+        .badge-medio {
+            background: #f9a825;
+            color: #222;
+        }
+
+        .badge-alto {
+            background: #c62828;
+        }
+
+        .seccion-titulo {
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        @media (max-width: 900px) {
+            .tarjetas,
+            .graficas {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="header-flex">
+        <img class="logo"
+             src="{% static 'sensores/img/carrera.png' %}"
+             alt="Carrera Telecomunicaciones">
+
+        <div>
+            <h1>Dashboard Ambiental Smart Campus UNL</h1>
+            <p>Sistema de monitoreo de condiciones ambientales en aulas mediante red de sensores inalámbricos</p>
+        </div>
+    </div>
+</header>
+
+<div class="contenedor">
+
+    <div class="contenedor-blanco">
+        <h2 class="seccion-titulo">Filtro de monitoreo</h2>
+
+        <div style="margin-top: 15px; margin-bottom: 15px;">
+            <a href="/api/exportar-csv/"
+               style="background: #0b5ed7; color: white; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                Exportar mediciones CSV
+            </a>
+        </div>
+
+        <form method="get">
+            <label for="aula"><strong>Seleccionar aula:</strong></label>
+
+            <select name="aula"
+                    id="aula"
+                    onchange="this.form.submit()"
+                    style="padding: 8px; border-radius: 6px; margin-left: 10px;">
+
+                <option value="todas" {% if aula_seleccionada == 'todas' %}selected{% endif %}>
+                    Todas las aulas
+                </option>
+
+                {% for aula in aulas %}
+                    <option value="{{ aula }}" {% if aula_seleccionada == aula %}selected{% endif %}>
+                        {{ aula }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    {% if mediciones %}
+    {% with ultima=mediciones.0 %}
+
+    <div class="contenedor-blanco">
+        <h2 class="seccion-titulo">Resumen del monitoreo</h2>
+
+        <div class="tarjetas">
+            <div class="tarjeta {% if estado_general == 'Adecuado' %}ok{% elif estado_general == 'Precaución' %}medio{% else %}alto{% endif %}">
+                <h3>Estado general del aula</h3>
+                <div class="valor">{{ estado_general }}</div>
+                <div class="estado">Evaluación ambiental automática</div>
+            </div>
+
+            <div class="tarjeta ok">
+                <h3>Última actualización</h3>
+                <div class="valor">{{ ultima.fecha_hora|date:"H:i:s" }}</div>
+                <div class="estado">{{ ultima.fecha_hora|date:"d/m/Y" }}</div>
+            </div>
+
+            <div class="tarjeta ok">
+                <h3>Mediciones cargadas</h3>
+                <div class="valor">{{ total_mediciones }}</div>
+                <div class="estado">Registros recientes mostrados</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="contenedor-blanco">
+        <h2 class="seccion-titulo">Alertas ambientales activas</h2>
+
+        {% if alertas_ambientales %}
+            {% for alerta in alertas_ambientales %}
+                <div style="background: #fff3cd; border-left: 8px solid #f9a825; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-weight: bold;">
+                    {{ alerta }}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="background: #e8f5e9; border-left: 8px solid #2e7d32; padding: 15px; border-radius: 8px; font-weight: bold;">
+                No existen alertas ambientales activas.
+            </div>
+        {% endif %}
+    </div>
+
+    <h2 class="seccion-titulo">
+        Estado actual del aula: {{ ultima.aula }} | Nodo: {{ ultima.nodo }}
+    </h2>
+
+    <div class="tarjetas">
+
+        <div class="tarjeta {% if ultima.temperatura >= 20 and ultima.temperatura <= 26 %}ok{% elif ultima.temperatura >= 18 and ultima.temperatura <= 28 %}medio{% else %}alto{% endif %}">
+            <h3>Temperatura</h3>
+            <div class="valor">{{ ultima.temperatura }} °C</div>
+            <div class="estado">
+                {% if ultima.temperatura >= 20 and ultima.temperatura <= 26 %}
+                    Estado: adecuado
+                {% elif ultima.temperatura >= 18 and ultima.temperatura <= 28 %}
+                    Estado: precaución
+                {% else %}
+                    Estado: fuera de rango
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tarjeta {% if ultima.humedad >= 40 and ultima.humedad <= 60 %}ok{% elif ultima.humedad >= 30 and ultima.humedad <= 70 %}medio{% else %}alto{% endif %}">
+            <h3>Humedad relativa</h3>
+            <div class="valor">{{ ultima.humedad }} %</div>
+            <div class="estado">
+                {% if ultima.humedad >= 40 and ultima.humedad <= 60 %}
+                    Estado: adecuado
+                {% elif ultima.humedad >= 30 and ultima.humedad <= 70 %}
+                    Estado: precaución
+                {% else %}
+                    Estado: fuera de rango
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tarjeta {% if ultima.co2 < 800 %}ok{% elif ultima.co2 < 1000 %}medio{% else %}alto{% endif %}">
+            <h3>CO₂</h3>
+            <div class="valor">{{ ultima.co2 }} ppm</div>
+            <div class="estado">
+                {% if ultima.co2 < 800 %}
+                    Estado: adecuado
+                {% elif ultima.co2 < 1000 %}
+                    Estado: precaución
+                {% else %}
+                    Estado: alto
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tarjeta {% if ultima.iluminacion >= 300 and ultima.iluminacion <= 500 %}ok{% elif ultima.iluminacion >= 100 %}medio{% else %}alto{% endif %}">
+            <h3>Iluminación</h3>
+            <div class="valor">{{ ultima.iluminacion }} lx</div>
+            <div class="estado">
+                {% if ultima.iluminacion >= 300 and ultima.iluminacion <= 500 %}
+                    Estado: adecuado
+                {% elif ultima.iluminacion >= 100 %}
+                    Estado: bajo
+                {% else %}
+                    Estado: muy bajo
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tarjeta {% if ultima.ruido <= 35 %}ok{% elif ultima.ruido <= 50 %}medio{% else %}alto{% endif %}">
+            <h3>Ruido</h3>
+            <div class="valor">{{ ultima.ruido }} dB</div>
+            <div class="estado">
+                {% if ultima.ruido <= 35 %}
+                    Estado: adecuado
+                {% elif ultima.ruido <= 50 %}
+                    Estado: moderado
+                {% else %}
+                    Estado: alto
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tarjeta {% if ultima.movimiento %}medio{% else %}ok{% endif %}">
+            <h3>Movimiento</h3>
+            <div class="valor">
+                {% if ultima.movimiento %}
+                    Sí
+                {% else %}
+                    No
+                {% endif %}
+            </div>
+            <div class="estado">Sensor PIR</div>
+        </div>
+
+    </div>
+
+    {% endwith %}
+    {% endif %}
+
+    <div class="contenedor-blanco">
+        <h2 class="seccion-titulo">Gráficas de comportamiento ambiental</h2>
+
+        <div class="graficas">
+            <div class="grafica-box">
+                <canvas id="graficaCO2"></canvas>
+            </div>
+
+            <div class="grafica-box">
+                <canvas id="graficaTemperatura"></canvas>
+            </div>
+
+            <div class="grafica-box">
+                <canvas id="graficaHumedad"></canvas>
+            </div>
+
+            <div class="grafica-box">
+                <canvas id="graficaIluminacion"></canvas>
+            </div>
+
+            <div class="grafica-box">
+                <canvas id="graficaRuido"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="contenedor-blanco">
+        <h2 class="seccion-titulo">Últimas mediciones registradas</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha y hora</th>
+                    <th>Aula</th>
+                    <th>Nodo</th>
+                    <th>Temperatura</th>
+                    <th>Humedad</th>
+                    <th>CO₂</th>
+                    <th>Iluminación</th>
+                    <th>Ruido</th>
+                    <th>Movimiento</th>
+                    <th>Estado CO₂</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for medicion in mediciones %}
+                <tr>
+                    <td>{{ medicion.fecha_hora|date:"d/m/Y H:i:s" }}</td>
+                    <td>{{ medicion.aula }}</td>
+                    <td>{{ medicion.nodo }}</td>
+                    <td>{{ medicion.temperatura }} °C</td>
+                    <td>{{ medicion.humedad }} %</td>
+                    <td>{{ medicion.co2 }} ppm</td>
+                    <td>{{ medicion.iluminacion }} lx</td>
+                    <td>{{ medicion.ruido }} dB</td>
+                    <td>
+                        {% if medicion.movimiento %}
+                            Sí
+                        {% else %}
+                            No
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if medicion.co2 < 800 %}
+                            <span class="badge badge-ok">Adecuado</span>
+                        {% elif medicion.co2 < 1000 %}
+                            <span class="badge badge-medio">Precaución</span>
+                        {% else %}
+                            <span class="badge badge-alto">Alto</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+const fechas = JSON.parse('{{ datos_grafica.fechas|safe }}');
+const temperatura = JSON.parse('{{ datos_grafica.temperatura|safe }}');
+const humedad = JSON.parse('{{ datos_grafica.humedad|safe }}');
+const co2 = JSON.parse('{{ datos_grafica.co2|safe }}');
+const iluminacion = JSON.parse('{{ datos_grafica.iluminacion|safe }}');
+const ruido = JSON.parse('{{ datos_grafica.ruido|safe }}');
+
+function lineaLimite(valor, etiqueta, color) {
+    return {
+        label: etiqueta,
+        data: fechas.map(() => valor),
+        borderColor: color,
+        borderDash: [10, 6],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false
+    };
+}
+
+function crearGraficaConLimites(id, etiqueta, datos, colorLinea, limites) {
+    const canvas = document.getElementById(id);
+
+    if (!canvas) {
+        return;
+    }
+
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: fechas,
+            datasets: [
+                {
+                    label: etiqueta,
+                    data: datos,
+                    borderColor: colorLinea,
+                    backgroundColor: colorLinea,
+                    tension: 0.35,
+                    fill: false,
+                    pointRadius: 3
+                },
+                ...limites
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
+
+crearGraficaConLimites('graficaCO2', 'CO₂ (ppm)', co2, '#c62828', [
+    lineaLimite(800, '800 ppm', '#f9a825'),
+    lineaLimite(1000, '1000 ppm', '#c62828')
+]);
+
+crearGraficaConLimites('graficaTemperatura', 'Temperatura (°C)', temperatura, '#2e7d32', [
+    lineaLimite(20, '20 °C', '#1565c0'),
+    lineaLimite(26, '26 °C', '#c62828')
+]);
+
+crearGraficaConLimites('graficaHumedad', 'Humedad (%)', humedad, '#1565c0', [
+    lineaLimite(40, '40 %', '#f9a825'),
+    lineaLimite(60, '60 %', '#f9a825')
+]);
+
+crearGraficaConLimites('graficaIluminacion', 'Iluminación (lx)', iluminacion, '#f9a825', [
+    lineaLimite(300, '300 lx', '#2e7d32'),
+    lineaLimite(500, '500 lx', '#1565c0')
+]);
+
+crearGraficaConLimites('graficaRuido', 'Ruido (dB)', ruido, '#6a1b9a', [
+    lineaLimite(35, '35 dB', '#2e7d32'),
+    lineaLimite(50, '50 dB', '#c62828')
+]);
+
+setTimeout(function () {
+    window.location.reload();
+}, 30000);
+</script>
+
+</body>
+</html>
