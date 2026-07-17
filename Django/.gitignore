@@ -1,0 +1,22 @@
+# Credenciales y configuracion local (NUNCA subir)
+.env
+
+# Entorno virtual de Python
+venv/
+env/
+.venv/
+
+# Archivos compilados de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Base de datos local de pruebas (si la usas)
+db.sqlite3
+
+# Archivos de configuracion del editor / sistema
+.vscode/
+.DS_Store
+
+# Archivos estaticos recolectados (se generan con collectstatic, no hace falta subirlos)
+staticfiles/
